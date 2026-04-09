@@ -20,6 +20,7 @@ import {
   Search,
   ShieldCheck,
   Siren,
+  Users,
 } from "lucide-react";
 
 type Status =
@@ -794,6 +795,7 @@ export default function App() {
       restricaoEmpenho: false,
       restricaoEmpenhoMotivo: "",
     });
+    setCadastroStep(1);
     setTab("geral");
   }
 
@@ -862,6 +864,7 @@ export default function App() {
       observacao: "",
       status: "Ativa",
     });
+    setEscortStep(1);
   }
 
   async function addHighlight() {
@@ -901,6 +904,7 @@ export default function App() {
     await loadDashboard(shiftDate);
     setSuccessMessage("Anúncio de chamada registrado.");
     setAnnouncementItemsDraft([]);
+    setAnnouncementStep(1);
   }
 
   async function generateReport() {
@@ -1558,58 +1562,94 @@ export default function App() {
           ) : null}
           {tab === "cadastro" ? (
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="stack-lg">
-              <SectionTitle title="Cadastro manual" subtitle="Novo recurso persistido na data do turno selecionado." />
+              <SectionTitle title="Cadastro manual" subtitle="Cadastro em etapas curtas para tela de celular." />
               <section className="panel">
                 <div className="stack-sm">
-                  <input value={cadastroForm.prefixo} onChange={(event) => setCadastroForm((prev) => ({ ...prev, prefixo: event.target.value }))} placeholder="Prefixo do recurso" />
-                  <select value={cadastroForm.tipo} onChange={(event) => setCadastroForm((prev) => ({ ...prev, tipo: event.target.value as ResourceType }))}>
-                    {resourceTypes.map((type) => <option key={type} value={type}>{type}</option>)}
-                  </select>
-                  <select value={cadastroForm.cia} onChange={(event) => setCadastroForm((prev) => ({ ...prev, cia: event.target.value }))}>
-                    {companyOptions.map((company) => <option key={company} value={company}>{company}</option>)}
-                  </select>
-                  <select value={cadastroForm.setor} onChange={(event) => setCadastroForm((prev) => ({ ...prev, setor: event.target.value }))}>
-                    {sectorsForSelectedCompany.map((item) => <option key={`${item.cia}-${item.setor}`} value={item.setor}>{item.setor}</option>)}
-                  </select>
-                  <div className="split-grid">
-                    <input type="time" value={cadastroForm.turnoInicio} onChange={(event) => setCadastroForm((prev) => ({ ...prev, turnoInicio: event.target.value }))} />
-                    <input type="time" value={cadastroForm.turnoFim} onChange={(event) => setCadastroForm((prev) => ({ ...prev, turnoFim: event.target.value }))} />
-                  </div>
-                  <input value={cadastroForm.militares} onChange={(event) => setCadastroForm((prev) => ({ ...prev, militares: event.target.value }))} placeholder="Militares separados por vírgula" />
-                  <button className={`toggle-button ${cadastroForm.restricaoEmpenho ? "toggle-button-danger" : ""}`} onClick={() => setCadastroForm((prev) => ({ ...prev, restricaoEmpenho: !prev.restricaoEmpenho }))}>
-                    <ShieldCheck className="icon-sm" />
-                    {cadastroForm.restricaoEmpenho ? "Viatura com restrição informativa de empenho" : "Marcar restrição informativa de empenho"}
-                  </button>
-                  {cadastroForm.restricaoEmpenho ? (
-                    <input
-                      value={cadastroForm.restricaoEmpenhoMotivo}
-                      onChange={(event) => setCadastroForm((prev) => ({ ...prev, restricaoEmpenhoMotivo: event.target.value }))}
-                      placeholder="Motivo da restrição de empenho"
-                    />
+                  <Stepper current={cadastroStep} total={3} labels={["Básico", "Turno", "Restrição"]} />
+                  {cadastroStep === 1 ? (
+                    <>
+                      <input value={cadastroForm.prefixo} onChange={(event) => setCadastroForm((prev) => ({ ...prev, prefixo: event.target.value }))} placeholder="Prefixo do recurso" />
+                      <select value={cadastroForm.tipo} onChange={(event) => setCadastroForm((prev) => ({ ...prev, tipo: event.target.value as ResourceType }))}>
+                        {resourceTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+                      </select>
+                      <select value={cadastroForm.cia} onChange={(event) => setCadastroForm((prev) => ({ ...prev, cia: event.target.value }))}>
+                        {companyOptions.map((company) => <option key={company} value={company}>{company}</option>)}
+                      </select>
+                      <select value={cadastroForm.setor} onChange={(event) => setCadastroForm((prev) => ({ ...prev, setor: event.target.value }))}>
+                        {sectorsForSelectedCompany.map((item) => <option key={`${item.cia}-${item.setor}`} value={item.setor}>{item.setor}</option>)}
+                      </select>
+                      <div className="coverage-box">
+                        <div className="panel-heading">
+                          <MapPinned className="icon-sm" />
+                          <p>Cobertura puxada do setor</p>
+                        </div>
+                        <div className="chip-row">
+                          {(sectorCatalog.find((item) => item.cia === cadastroForm.cia && item.setor === cadastroForm.setor)?.bairros || []).map((bairro) => <span key={bairro} className="chip">{bairro}</span>)}
+                        </div>
+                      </div>
+                    </>
                   ) : null}
-                  <div>
-                    <p className="muted">Status inicial</p>
-                    <div className="chip-row">
-                      {statusOptions.map((status) => (
-                        <button key={status} className={`chip-button ${cadastroForm.status === status ? statusStyles[status] : ""}`} onClick={() => setCadastroForm((prev) => ({ ...prev, status }))}>
-                          {status}
-                        </button>
-                      ))}
-                    </div>
+                  {cadastroStep === 2 ? (
+                    <>
+                      <div className="split-grid">
+                        <input type="time" value={cadastroForm.turnoInicio} onChange={(event) => setCadastroForm((prev) => ({ ...prev, turnoInicio: event.target.value }))} />
+                        <input type="time" value={cadastroForm.turnoFim} onChange={(event) => setCadastroForm((prev) => ({ ...prev, turnoFim: event.target.value }))} />
+                      </div>
+                      <input value={cadastroForm.militares} onChange={(event) => setCadastroForm((prev) => ({ ...prev, militares: event.target.value }))} placeholder="Militares separados por vírgula" />
+                      <div>
+                        <p className="muted">Status inicial</p>
+                        <div className="chip-row">
+                          {statusOptions.map((status) => (
+                            <button key={status} className={`chip-button ${cadastroForm.status === status ? statusStyles[status] : ""}`} onClick={() => setCadastroForm((prev) => ({ ...prev, status }))}>
+                              {status}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="list-card">
+                        <div>
+                          <strong>{cadastroForm.prefixo || "Sem prefixo"}</strong>
+                          <p>{cadastroForm.tipo} • {cadastroForm.cia} • {cadastroForm.setor}</p>
+                        </div>
+                        <span>{cadastroForm.turnoInicio} • {cadastroForm.turnoFim}</span>
+                      </div>
+                    </>
+                  ) : null}
+                  {cadastroStep === 3 ? (
+                    <>
+                      <button className={`toggle-button ${cadastroForm.restricaoEmpenho ? "toggle-button-danger" : ""}`} onClick={() => setCadastroForm((prev) => ({ ...prev, restricaoEmpenho: !prev.restricaoEmpenho }))}>
+                        <ShieldCheck className="icon-sm" />
+                        {cadastroForm.restricaoEmpenho ? "Viatura com restrição informativa de empenho" : "Marcar restrição informativa de empenho"}
+                      </button>
+                      {cadastroForm.restricaoEmpenho ? (
+                        <input
+                          value={cadastroForm.restricaoEmpenhoMotivo}
+                          onChange={(event) => setCadastroForm((prev) => ({ ...prev, restricaoEmpenhoMotivo: event.target.value }))}
+                          placeholder="Motivo da restrição de empenho"
+                        />
+                      ) : null}
+                      <div className="coverage-box">
+                        <div className="panel-heading">
+                          <ShieldCheck className="icon-sm" />
+                          <p>Resumo antes de salvar</p>
+                        </div>
+                        <div className="stack-sm">
+                          <p className="radio-copy">{cadastroForm.prefixo || "Sem prefixo"} • {cadastroForm.tipo} • {cadastroForm.status}</p>
+                          <p className="radio-copy">{cadastroForm.cia} • {cadastroForm.setor} • {cadastroForm.turnoInicio} às {cadastroForm.turnoFim}</p>
+                          <p className="muted">{cadastroForm.militares || "Sem militares informados."}</p>
+                          {cadastroForm.restricaoEmpenho ? <p className="accent-red">Restrição: {cadastroForm.restricaoEmpenhoMotivo || "informativa, sem motivo detalhado"}</p> : <p className="accent-green">Sem restrição de empenho.</p>}
+                        </div>
+                      </div>
+                      <button className="primary-button" onClick={() => void addVehicle()}>
+                        <Save className="icon-sm" />
+                        Salvar recurso no turno
+                      </button>
+                    </>
+                  ) : null}
+                  <div className="step-actions">
+                    <button className="toggle-button" onClick={() => setCadastroStep((prev) => Math.max(1, prev - 1))} disabled={cadastroStep === 1}>Voltar</button>
+                    {cadastroStep < 3 ? <button className="primary-button" onClick={() => setCadastroStep((prev) => Math.min(3, prev + 1))}>Próximo</button> : null}
                   </div>
-                  <div className="coverage-box">
-                    <div className="panel-heading">
-                      <MapPinned className="icon-sm" />
-                      <p>Bairros puxados do setor selecionado</p>
-                    </div>
-                    <div className="chip-row">
-                      {(sectorCatalog.find((item) => item.cia === cadastroForm.cia && item.setor === cadastroForm.setor)?.bairros || []).map((bairro) => <span key={bairro} className="chip">{bairro}</span>)}
-                    </div>
-                  </div>
-                  <button className="primary-button" onClick={() => void addVehicle()}>
-                    <Save className="icon-sm" />
-                    Salvar recurso no turno
-                  </button>
                 </div>
               </section>
             </motion.div>
@@ -1655,39 +1695,84 @@ export default function App() {
           ) : null}
           {tab === "escoltas" ? (
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="stack-lg">
-              <SectionTitle title="Escoltas" subtitle="Registro separado por data, com REDS, guarnição responsável, escolta hospitalar e liberação do recurso." />
+              <SectionTitle title="Escoltas" subtitle="Fluxo curto para registrar REDS, responsáveis e situação final no celular." />
               <section className="panel">
                 <div className="stack-sm">
-                  <div className="split-grid">
-                    <input type="date" value={escortForm.escortDate} onChange={(event) => setEscortForm((prev) => ({ ...prev, escortDate: event.target.value }))} />
-                    <select value={escortForm.escortType} onChange={(event) => setEscortForm((prev) => ({ ...prev, escortType: event.target.value }))}>
-                      <option value="Escolta">Escolta</option>
-                      <option value="Escolta hospitalar">Escolta hospitalar</option>
-                    </select>
+                  <Stepper current={escortStep} total={3} labels={["Base", "Responsáveis", "Situação"]} />
+                  {escortStep === 1 ? (
+                    <>
+                      <div className="split-grid">
+                        <input type="date" value={escortForm.escortDate} onChange={(event) => setEscortForm((prev) => ({ ...prev, escortDate: event.target.value }))} />
+                        <select value={escortForm.escortType} onChange={(event) => setEscortForm((prev) => ({ ...prev, escortType: event.target.value }))}>
+                          <option value="Escolta">Escolta</option>
+                          <option value="Escolta hospitalar">Escolta hospitalar</option>
+                        </select>
+                      </div>
+                      <div className="split-grid">
+                        <input value={escortForm.reds} onChange={(event) => setEscortForm((prev) => ({ ...prev, reds: event.target.value }))} placeholder="REDS" />
+                        <input type="time" value={escortForm.inicioHora} onChange={(event) => setEscortForm((prev) => ({ ...prev, inicioHora: event.target.value }))} />
+                      </div>
+                      <input value={escortForm.natureza} onChange={(event) => setEscortForm((prev) => ({ ...prev, natureza: event.target.value }))} placeholder="Natureza da ocorrência" />
+                      {escortForm.escortType === "Escolta hospitalar" ? <input value={escortForm.hospitalNome} onChange={(event) => setEscortForm((prev) => ({ ...prev, hospitalNome: event.target.value }))} placeholder="Hospital" /> : null}
+                      <div className="list-card">
+                        <div>
+                          <strong>{escortForm.escortType}</strong>
+                          <p>{escortForm.reds || "REDS não informado"} • início {escortForm.inicioHora}</p>
+                        </div>
+                        <span>{escortForm.escortDate}</span>
+                      </div>
+                    </>
+                  ) : null}
+                  {escortStep === 2 ? (
+                    <>
+                      <input value={escortForm.guarnicaoResponsavel} onChange={(event) => setEscortForm((prev) => ({ ...prev, guarnicaoResponsavel: event.target.value }))} placeholder="Guarnição responsável, separada por vírgula" />
+                      <input value={escortForm.responsavelExterno} onChange={(event) => setEscortForm((prev) => ({ ...prev, responsavelExterno: event.target.value }))} placeholder="Responsável externo, quando não for do turno" />
+                      <div className="split-grid">
+                        <input value={escortForm.prefixoApoio} onChange={(event) => setEscortForm((prev) => ({ ...prev, prefixoApoio: event.target.value }))} placeholder="Prefixo do recurso de apoio" />
+                        <input type="date" value={escortForm.origemTurnoData} onChange={(event) => setEscortForm((prev) => ({ ...prev, origemTurnoData: event.target.value }))} />
+                      </div>
+                      <div className="coverage-box">
+                        <div className="panel-heading">
+                          <ClipboardPen className="icon-sm" />
+                          <p>Responsabilidade lançada</p>
+                        </div>
+                        <div className="stack-sm">
+                          <p className="radio-copy">Guarnição: {escortForm.guarnicaoResponsavel || "não informada"}</p>
+                          <p className="radio-copy">Externo: {escortForm.responsavelExterno || "não informado"}</p>
+                          <p className="radio-copy">Origem do turno: {escortForm.origemTurnoData}</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
+                  {escortStep === 3 ? (
+                    <>
+                      <button className={`toggle-button ${escortForm.umMilitarNaEscolta ? "toggle-button-active" : ""}`} onClick={() => setEscortForm((prev) => ({ ...prev, umMilitarNaEscolta: !prev.umMilitarNaEscolta }))}>
+                        <ShieldCheck className="icon-sm" />
+                        {escortForm.umMilitarNaEscolta ? "Somente um militar na escolta" : "Marcar escolta com apenas um militar"}
+                      </button>
+                      {escortForm.umMilitarNaEscolta ? <input value={escortForm.militarEscolta} onChange={(event) => setEscortForm((prev) => ({ ...prev, militarEscolta: event.target.value }))} placeholder="Militar que permanecerá na escolta" /> : null}
+                      <button className={`toggle-button ${escortForm.recursoLiberado ? "toggle-button-active" : ""}`} onClick={() => setEscortForm((prev) => ({ ...prev, recursoLiberado: !prev.recursoLiberado }))}>
+                        <Radio className="icon-sm" />
+                        {escortForm.recursoLiberado ? "Recurso liberado para atendimento" : "Marcar recurso liberado para atendimento"}
+                      </button>
+                      <textarea value={escortForm.observacao} onChange={(event) => setEscortForm((prev) => ({ ...prev, observacao: event.target.value }))} placeholder="Observações da escolta" rows={3} />
+                      <div className="coverage-box">
+                        <div className="panel-heading">
+                          <Siren className="icon-sm" />
+                          <p>Fechamento da escolta</p>
+                        </div>
+                        <div className="stack-sm">
+                          {escortForm.umMilitarNaEscolta ? <p className="radio-copy">Militar fixado: {escortForm.militarEscolta || "não informado"}</p> : <p className="radio-copy">Sem militar fixado isoladamente.</p>}
+                          {escortForm.recursoLiberado ? <p className="accent-green">Recurso liberado para atendimento.</p> : <p className="muted">Recurso segue vinculado à escolta.</p>}
+                        </div>
+                      </div>
+                      <button className="primary-button" onClick={() => void addEscort()}><Save className="icon-sm" />Salvar escolta</button>
+                    </>
+                  ) : null}
+                  <div className="step-actions">
+                    <button className="toggle-button" onClick={() => setEscortStep((prev) => Math.max(1, prev - 1))} disabled={escortStep === 1}>Voltar</button>
+                    {escortStep < 3 ? <button className="primary-button" onClick={() => setEscortStep((prev) => Math.min(3, prev + 1))}>Próximo</button> : null}
                   </div>
-                  <div className="split-grid">
-                    <input value={escortForm.reds} onChange={(event) => setEscortForm((prev) => ({ ...prev, reds: event.target.value }))} placeholder="REDS" />
-                    <input type="time" value={escortForm.inicioHora} onChange={(event) => setEscortForm((prev) => ({ ...prev, inicioHora: event.target.value }))} />
-                  </div>
-                  <input value={escortForm.natureza} onChange={(event) => setEscortForm((prev) => ({ ...prev, natureza: event.target.value }))} placeholder="Natureza da ocorrência" />
-                  <input value={escortForm.guarnicaoResponsavel} onChange={(event) => setEscortForm((prev) => ({ ...prev, guarnicaoResponsavel: event.target.value }))} placeholder="Guarnição responsável pela ocorrência, separada por vírgula" />
-                  <input value={escortForm.responsavelExterno} onChange={(event) => setEscortForm((prev) => ({ ...prev, responsavelExterno: event.target.value }))} placeholder="Responsável externo, quando não for do turno" />
-                  <div className="split-grid">
-                    <input value={escortForm.prefixoApoio} onChange={(event) => setEscortForm((prev) => ({ ...prev, prefixoApoio: event.target.value }))} placeholder="Prefixo do recurso de apoio" />
-                    <input type="date" value={escortForm.origemTurnoData} onChange={(event) => setEscortForm((prev) => ({ ...prev, origemTurnoData: event.target.value }))} />
-                  </div>
-                  {escortForm.escortType === "Escolta hospitalar" ? <input value={escortForm.hospitalNome} onChange={(event) => setEscortForm((prev) => ({ ...prev, hospitalNome: event.target.value }))} placeholder="Hospital" /> : null}
-                  <button className={`toggle-button ${escortForm.umMilitarNaEscolta ? "toggle-button-active" : ""}`} onClick={() => setEscortForm((prev) => ({ ...prev, umMilitarNaEscolta: !prev.umMilitarNaEscolta }))}>
-                    <ShieldCheck className="icon-sm" />
-                    {escortForm.umMilitarNaEscolta ? "Somente um militar na escolta" : "Marcar escolta com apenas um militar"}
-                  </button>
-                  {escortForm.umMilitarNaEscolta ? <input value={escortForm.militarEscolta} onChange={(event) => setEscortForm((prev) => ({ ...prev, militarEscolta: event.target.value }))} placeholder="Militar que permanecerá na escolta" /> : null}
-                  <button className={`toggle-button ${escortForm.recursoLiberado ? "toggle-button-active" : ""}`} onClick={() => setEscortForm((prev) => ({ ...prev, recursoLiberado: !prev.recursoLiberado }))}>
-                    <Radio className="icon-sm" />
-                    {escortForm.recursoLiberado ? "Recurso liberado para atendimento" : "Marcar recurso liberado para atendimento"}
-                  </button>
-                  <textarea value={escortForm.observacao} onChange={(event) => setEscortForm((prev) => ({ ...prev, observacao: event.target.value }))} placeholder="Observações da escolta" rows={3} />
-                  <button className="primary-button" onClick={() => void addEscort()}><Save className="icon-sm" />Salvar escolta</button>
                 </div>
               </section>
               <div className="stack-sm">
@@ -1747,65 +1832,98 @@ export default function App() {
           ) : null}
           {tab === "anuncio" ? (
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="stack-lg">
-              <SectionTitle title="Anúncio de chamada" subtitle="Efetivo do batalhão por chamada, separado por CIA e independente das viaturas do turno." />
+              <SectionTitle title="Anúncio de chamada" subtitle="Fluxo por etapas para cabeçalho, efetivo e equipes do anúncio." />
               <section className="panel">
                 <div className="stack-sm">
-                  <div className="split-grid">
-                    <input value={announcementForm.batalhao} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, batalhao: event.target.value }))} placeholder="Batalhão" />
-                    <input value={announcementForm.cia} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, cia: event.target.value }))} placeholder="CIA" />
-                  </div>
-                  <div className="split-grid">
-                    <input value={announcementForm.turnoNome} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, turnoNome: event.target.value }))} placeholder="Turno" />
-                    <input value={announcementForm.dataLabel} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, dataLabel: event.target.value }))} placeholder="Data formatada" />
-                  </div>
-                  <div className="split-grid">
-                    <input value={announcementForm.chamadaHorarios} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, chamadaHorarios: event.target.value }))} placeholder="Horário de chamada" />
-                    <input value={announcementForm.lancamentoHorarios} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, lancamentoHorarios: event.target.value }))} placeholder="Horário de lançamento" />
-                  </div>
-                  <div className="split-grid">
-                    <select value={announcementForm.viaturasConformeEscala} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, viaturasConformeEscala: event.target.value }))}>
-                      <option value="SIM">SIM</option>
-                      <option value="NÃO">NÃO</option>
-                    </select>
-                    <input value={announcementForm.slogan} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, slogan: event.target.value }))} placeholder="Slogan final" />
-                  </div>
-                  <div className="split-grid">
-                    <input value={announcementForm.previstos} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, previstos: event.target.value }))} placeholder="Previstos" />
-                    <input value={announcementForm.presentes} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, presentes: event.target.value }))} placeholder="Presentes" />
-                  </div>
-                  <div className="split-grid">
-                    <input value={announcementForm.baixas} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, baixas: event.target.value }))} placeholder="Baixas" />
-                    <input value={announcementForm.faltas} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, faltas: event.target.value }))} placeholder="Faltas" />
-                  </div>
-                  <textarea value={announcementForm.observacoes} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, observacoes: event.target.value }))} placeholder="Observações extras" rows={3} />
-
-                  <div className="coverage-box">
-                    <div className="panel-heading">
-                      <Megaphone className="icon-sm" />
-                      <p>Equipes do anúncio</p>
-                    </div>
-                    <div className="stack-sm">
-                      <input value={announcementItemForm.bloco} onChange={(event) => setAnnouncementItemForm((prev) => ({ ...prev, bloco: event.target.value }))} placeholder="Bloco, ex.: VIATURAS DE ÁREA" />
+                  <Stepper current={announcementStep} total={3} labels={["Cabeçalho", "Efetivo", "Equipes"]} />
+                  {announcementStep === 1 ? (
+                    <>
                       <div className="split-grid">
-                        <input value={announcementItemForm.titulo} onChange={(event) => setAnnouncementItemForm((prev) => ({ ...prev, titulo: event.target.value }))} placeholder="Título, ex.: RP Setor 10" />
-                        <input value={announcementItemForm.prefixo} onChange={(event) => setAnnouncementItemForm((prev) => ({ ...prev, prefixo: event.target.value }))} placeholder="Prefixo" />
+                        <input value={announcementForm.batalhao} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, batalhao: event.target.value }))} placeholder="Batalhão" />
+                        <input value={announcementForm.cia} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, cia: event.target.value }))} placeholder="CIA" />
                       </div>
-                      <textarea value={announcementItemForm.efetivo} onChange={(event) => setAnnouncementItemForm((prev) => ({ ...prev, efetivo: event.target.value }))} placeholder="Efetivo, um por linha" rows={3} />
-                      <input value={announcementItemForm.observacao} onChange={(event) => setAnnouncementItemForm((prev) => ({ ...prev, observacao: event.target.value }))} placeholder="Observação da equipe" />
-                      <button className="toggle-button" onClick={addAnnouncementItemDraft}><Save className="icon-sm" />Adicionar equipe ao anúncio</button>
-                      {announcementItemsDraft.map((item, index) => (
-                        <div key={`${item.titulo}-${index}`} className="list-card">
-                          <div>
-                            <strong>{item.titulo || item.bloco}</strong>
-                            <p>{item.prefixo}</p>
-                          </div>
-                          <span>{index + 1}</span>
+                      <div className="split-grid">
+                        <input value={announcementForm.turnoNome} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, turnoNome: event.target.value }))} placeholder="Turno" />
+                        <input value={announcementForm.dataLabel} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, dataLabel: event.target.value }))} placeholder="Data formatada" />
+                      </div>
+                      <div className="list-card">
+                        <div>
+                          <strong>{announcementForm.batalhao || "Batalhão"}</strong>
+                          <p>{announcementForm.cia || "CIA"} • {announcementForm.turnoNome || "Turno não informado"}</p>
                         </div>
-                      ))}
-                    </div>
+                        <span>{announcementForm.dataLabel || "Sem data"}</span>
+                      </div>
+                    </>
+                  ) : null}
+                  {announcementStep === 2 ? (
+                    <>
+                      <div className="split-grid">
+                        <input value={announcementForm.chamadaHorarios} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, chamadaHorarios: event.target.value }))} placeholder="Horário de chamada" />
+                        <input value={announcementForm.lancamentoHorarios} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, lancamentoHorarios: event.target.value }))} placeholder="Horário de lançamento" />
+                      </div>
+                      <div className="split-grid">
+                        <select value={announcementForm.viaturasConformeEscala} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, viaturasConformeEscala: event.target.value }))}>
+                          <option value="SIM">SIM</option>
+                          <option value="NÃO">NÃO</option>
+                        </select>
+                        <input value={announcementForm.slogan} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, slogan: event.target.value }))} placeholder="Slogan final" />
+                      </div>
+                      <div className="split-grid">
+                        <input value={announcementForm.previstos} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, previstos: event.target.value }))} placeholder="Previstos" />
+                        <input value={announcementForm.presentes} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, presentes: event.target.value }))} placeholder="Presentes" />
+                      </div>
+                      <div className="split-grid">
+                        <input value={announcementForm.baixas} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, baixas: event.target.value }))} placeholder="Baixas" />
+                        <input value={announcementForm.faltas} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, faltas: event.target.value }))} placeholder="Faltas" />
+                      </div>
+                      <textarea value={announcementForm.observacoes} onChange={(event) => setAnnouncementForm((prev) => ({ ...prev, observacoes: event.target.value }))} placeholder="Observações extras" rows={3} />
+                      <div className="coverage-box">
+                        <div className="panel-heading">
+                          <Users className="icon-sm" />
+                          <p>Resumo do efetivo</p>
+                        </div>
+                        <div className="stack-sm">
+                          <p className="radio-copy">Previstos: {announcementForm.previstos} • Presentes: {announcementForm.presentes}</p>
+                          <p className="radio-copy">Baixas: {announcementForm.baixas || "NÃO"} • Faltas: {announcementForm.faltas || "NÃO"}</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
+                  {announcementStep === 3 ? (
+                    <>
+                      <div className="coverage-box">
+                        <div className="panel-heading">
+                          <Megaphone className="icon-sm" />
+                          <p>Equipes do anúncio</p>
+                        </div>
+                        <div className="stack-sm">
+                          <input value={announcementItemForm.bloco} onChange={(event) => setAnnouncementItemForm((prev) => ({ ...prev, bloco: event.target.value }))} placeholder="Bloco, ex.: VIATURAS DE ÁREA" />
+                          <div className="split-grid">
+                            <input value={announcementItemForm.titulo} onChange={(event) => setAnnouncementItemForm((prev) => ({ ...prev, titulo: event.target.value }))} placeholder="Título, ex.: RP Setor 10" />
+                            <input value={announcementItemForm.prefixo} onChange={(event) => setAnnouncementItemForm((prev) => ({ ...prev, prefixo: event.target.value }))} placeholder="Prefixo" />
+                          </div>
+                          <textarea value={announcementItemForm.efetivo} onChange={(event) => setAnnouncementItemForm((prev) => ({ ...prev, efetivo: event.target.value }))} placeholder="Efetivo, um por linha" rows={3} />
+                          <input value={announcementItemForm.observacao} onChange={(event) => setAnnouncementItemForm((prev) => ({ ...prev, observacao: event.target.value }))} placeholder="Observação da equipe" />
+                          <button className="toggle-button" onClick={addAnnouncementItemDraft}><Save className="icon-sm" />Adicionar equipe ao anúncio</button>
+                          {announcementItemsDraft.length === 0 ? <p className="empty-inline">Nenhuma equipe adicionada ainda.</p> : null}
+                          {announcementItemsDraft.map((item, index) => (
+                            <div key={`${item.titulo}-${index}`} className="list-card">
+                              <div>
+                                <strong>{item.titulo || item.bloco}</strong>
+                                <p>{item.prefixo || "Sem prefixo"}</p>
+                              </div>
+                              <span>{index + 1}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <button className="primary-button" onClick={() => void addAnnouncement()}><Save className="icon-sm" />Salvar anúncio</button>
+                    </>
+                  ) : null}
+                  <div className="step-actions">
+                    <button className="toggle-button" onClick={() => setAnnouncementStep((prev) => Math.max(1, prev - 1))} disabled={announcementStep === 1}>Voltar</button>
+                    {announcementStep < 3 ? <button className="primary-button" onClick={() => setAnnouncementStep((prev) => Math.min(3, prev + 1))}>Próximo</button> : null}
                   </div>
-
-                  <button className="primary-button" onClick={() => void addAnnouncement()}><Save className="icon-sm" />Salvar anúncio</button>
                 </div>
               </section>
               <div className="stack-sm">
